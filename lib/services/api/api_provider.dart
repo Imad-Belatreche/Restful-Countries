@@ -4,17 +4,13 @@ import 'package:countries_restful/models/country.dart';
 import 'package:countries_restful/services/api/base_url.dart';
 import 'package:http/http.dart' as http;
 
-class ApiCalls {
-  const ApiCalls();
+class ApiProvider {
+  http.Client client = http.Client();
 
-  Future<List<Country>> getAllCountries(String name) async {
-    final client = http.Client();
+  Future<List<Country>> getAllCountries() async {
     final response = await client.get(
-        Uri.parse(
-            "$baseUrl/all?fields=name,altSpellings,capital,cca3,currencies,continents,timezones,languages,maps,area,flags,population"),
-        headers: {
-          'Connection': 'Keep-Alive',
-        });
+      Uri.parse("${ApiConstants.baseUrl}/all?fields=${ApiConstants.fields}"),
+    );
     final List<Country> countries = [];
 
     if (response.statusCode == 200) {
