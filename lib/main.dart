@@ -1,4 +1,4 @@
-import 'package:countries_restful/main_view.dart';
+import 'package:countries_restful/views/home_view/home_view.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -6,7 +6,7 @@ void main() {
     const MaterialApp(
       title: "Restful Countries",
       debugShowCheckedModeBanner: false,
-      home: MainView(),
+      home: HomeView(),
     ),
   );
 }
