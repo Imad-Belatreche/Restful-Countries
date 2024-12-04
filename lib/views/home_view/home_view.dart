@@ -17,12 +17,25 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView> {
   late Future<List<Country>> country;
   final _searchController = TextEditingController();
+  final _focusNode = FocusNode();
 
   @override
   void initState() {
     country = widget.api.getAllCountries();
+    _focusNode.addListener(
+      () => setState(() {}),
+    );
     super.initState();
   }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  //TODO: Clean things a lil bit and improve the Theme
 
   @override
   Widget build(BuildContext context) {
@@ -31,34 +44,36 @@ class _HomeViewState extends State<HomeView> {
         backgroundColor: Colors.white70,
         elevation: 6,
         shadowColor: Colors.black,
-        actions: [
-          SizedBox(
-            width: 150,
-            height: 40,
-            child: TextField(
-              controller: _searchController,
-              cursorHeight: 17,
-              autocorrect: true,
-              enableSuggestions: true,
-              keyboardType: TextInputType.name,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(horizontal: 10),
-                hintText: "Search...",
-                hintStyle: TextStyle(color: Colors.black38),
-              ),
-            ),
-          ),
-          IconButton(
-            onPressed: () {
-              final name = _searchController.text.trim().toLowerCase();
+        centerTitle: true,
+        title: SizedBox(
+          width: 300,
+          height: 40,
+          child: TextField(
+            controller: _searchController,
+            cursorHeight: 17,
+            autocorrect: true,
+            enableSuggestions: true,
+            focusNode: _focusNode,
+            keyboardType: TextInputType.name,
+            onChanged: (value) {
               context.read<CountriesApiBloc>().add(
-                    CountriesApiSearchCountryEvent(name: name),
+                    CountriesApiSearchCountryEvent(
+                      name: value.toLowerCase(),
+                      allCountries: country,
+                    ),
                   );
             },
-            icon: const Icon(CupertinoIcons.search),
-          )
-        ],
+            decoration: InputDecoration(
+              icon: _focusNode.hasFocus
+                  ? const Icon(CupertinoIcons.search)
+                  : null,
+              border: const OutlineInputBorder(),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+              hintText: "Search...",
+              hintStyle: const TextStyle(color: Colors.black38),
+            ),
+          ),
+        ),
       ),
       body: Center(
         child: FutureBuilder(
@@ -68,7 +83,13 @@ class _HomeViewState extends State<HomeView> {
               final countries = snapshot.data!;
 
               return BlocBuilder<CountriesApiBloc, CountriesApiState>(
-                bloc: CountriesApiBloc(),
+                buildWhen: (previous, current) {
+                  if (previous is CountriesApiLoadingState &&
+                      current is CountriesApiDoneState) {
+                    return true;
+                  }
+                  return false;
+                },
                 builder: (context, state) {
                   if (state is CountriesApiInitialState) {
                     return ListView.builder(
@@ -80,12 +101,20 @@ class _HomeViewState extends State<HomeView> {
                       },
                     );
                   } else if (state is CountriesApiDoneState) {
-                    return ListView.builder(
-                      itemCount: state.countries.length,
-                      itemBuilder: (context, index) {
-                        return CountryItem(item: state.countries[index]);
-                      },
-                    );
+                    return state.countries.isEmpty
+                        ? const Center(
+                            child: Text(
+                              "Sorry sir, there are no country with that name.",
+                            ),
+                          )
+                        : ListView.builder(
+                            itemCount: state.countries.length,
+                            itemBuilder: (context, index) {
+                              return CountryItem(
+                                item: state.countries[index],
+                              );
+                            },
+                          );
                   } else if (state is CountriesApiLoadingState) {
                     return const CircularProgressIndicator();
                   } else {

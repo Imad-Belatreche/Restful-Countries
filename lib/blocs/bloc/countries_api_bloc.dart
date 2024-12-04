@@ -1,6 +1,5 @@
 import 'dart:developer';
 import 'package:countries_restful/models/country.dart';
-import 'package:countries_restful/services/api/api_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -12,12 +11,16 @@ class CountriesApiBloc extends Bloc<CountriesApiEvent, CountriesApiState> {
     on<CountriesApiSearchCountryEvent>((event, emit) async {
       emit(CountriesApiLoadingState());
       try {
-        final allCountries = await ApiProvider().getAllCountries();
-        final selectedCountries = allCountries
-            .where(
-              (element) => element.name.common.contains(event.name),
-            )
-            .toList();
+        final allCountries = await event.allCountries;
+
+        final selectedCountries = allCountries.where(
+          (element) {
+            final toSmall = element.name.common.toLowerCase();
+            final containsName = toSmall.contains(event.name);
+            return containsName;
+          },
+        ).toList();
+
         emit(
           CountriesApiDoneState(
             countries: selectedCountries,
